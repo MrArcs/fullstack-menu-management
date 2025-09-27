@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://menuuser:password@db:5432/menudb
+      - POSTGRES_USER=menuuser
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=menudb
+    depends_on:
+      - db
+    volumes:
+      - ./nst-backend:/app/nst-backend
+      - ./nxt-frontend:/app/nxt-frontend
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=menuuser
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=menudb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:

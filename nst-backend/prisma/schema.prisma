@@ -1,0 +1,49 @@
+// apps/backend/prisma/schema.prisma
+datasource db {
+      provider = "postgresql"
+      url      = env("DATABASE_URL")
+}
+
+generator client {
+      provider = "prisma-client-js"
+}
+
+model Menu {
+      id        String     @id @default(cuid())
+      name      String
+      slug      String     @unique
+      status    MenuStatus @default(DRAFT) // DRAFT | PUBLISHED
+      createdAt DateTime   @default(now())
+      updatedAt DateTime   @updatedAt
+
+      items MenuItem[] // root + children
+}
+
+model MenuItem {
+      id        String   @id @default(cuid())
+      menuId    String
+      parentId  String? // null indicates root item
+      title     String
+      url       String? // optional for non-clickable
+      type      ItemType @default(LINK) // LINK | GROUP | SEPARATOR
+      order     Int // sibling order (0-based or 1-based; choose 1-based)
+      createdAt DateTime @default(now())
+      updatedAt DateTime @updatedAt
+
+      menu     Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+      parent   MenuItem?  @relation("ItemToChildren", fields: [parentId], references: [id], onDelete: Cascade)
+      children MenuItem[] @relation("ItemToChildren")
+
+      @@index([menuId, parentId, order])
+}
+
+enum MenuStatus {
+      DRAFT
+      PUBLISHED
+}
+
+enum ItemType {
+      LINK
+      GROUP
+      SEPARATOR
+}

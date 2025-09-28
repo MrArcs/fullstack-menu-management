@@ -20,7 +20,16 @@ import { AddItemModal } from '@/components/menu/add-item-modal'
 import { CreateMenuModal } from '@/components/menu/create-menu-modal'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Grid, Expand, ChevronUp, Trash2, Plus } from 'lucide-react'
+import {
+    Grid,
+    Expand,
+    ChevronUp,
+    Trash2,
+    Plus,
+    LayoutDashboard,
+    Menu as MenuIcon,
+    X,
+} from 'lucide-react'
 
 export default function MenusPage() {
     const dispatch = useAppDispatch()
@@ -43,6 +52,7 @@ export default function MenusPage() {
     const [showAddModal, setShowAddModal] = useState(false)
     const [selectedParentId, setSelectedParentId] = useState<string>('')
     const [showCreateMenuModal, setShowCreateMenuModal] = useState(false)
+    const [sidebarOpen, setSidebarOpen] = useState(false)
 
     useEffect(() => {
         dispatch(fetchMenus()).catch((error) => {
@@ -135,98 +145,138 @@ export default function MenusPage() {
 
     return (
         <div className="flex h-screen bg-gray-50">
-            {/* Sidebar */}
-            <Sidebar />
+            {/* Sidebar - Hidden on mobile by default */}
+            <div
+                className={`${
+                    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                } fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto`}
+            >
+                <Sidebar />
+            </div>
+
+            {/* Mobile sidebar overlay */}
+            {sidebarOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="bg-white border-b border-gray-200 px-6 py-4">
-                    <div className="flex items-center space-x-2 mb-4">
-                        <Grid className="h-5 w-5 text-gray-600" />
-                        <h1 className="text-2xl font-semibold text-gray-900">
-                            Menus
-                        </h1>
+                <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                            {/* Mobile menu toggle button */}
+                            <button
+                                onClick={() => setSidebarOpen(!sidebarOpen)}
+                                className="lg:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                            >
+                                {sidebarOpen ? (
+                                    <X className="h-6 w-6" />
+                                ) : (
+                                    <MenuIcon className="h-6 w-6" />
+                                )}
+                            </button>
+
+                            <div className="p-3 bg-blue-600 text-white rounded-full">
+                                <LayoutDashboard className="w-5 h-5" />
+                            </div>
+                            <h1 className="text-2xl font-semibold text-gray-900">
+                                Menus
+                            </h1>
+                        </div>
                     </div>
 
                     {/* Menu Selection */}
-                    <div className="flex items-center space-x-4">
-                        <Label htmlFor="menu-select">Menu</Label>
-                        <div className="relative">
-                            <select
-                                id="menu-select"
-                                className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                value={currentMenu?.slug || ''}
-                                onChange={(e) =>
-                                    handleMenuSelect(e.target.value)
-                                }
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                            <Label
+                                htmlFor="menu-select"
+                                className="text-sm font-medium"
                             >
-                                <option value="">Select a menu</option>
-                                {menus &&
-                                Array.isArray(menus) &&
-                                menus.length > 0
-                                    ? menus
-                                          .filter(
-                                              (menu) =>
-                                                  menu &&
-                                                  typeof menu === 'object' &&
-                                                  menu.id &&
-                                                  menu.slug &&
-                                                  menu.name
-                                          )
-                                          .map((menu) => (
-                                              <option
-                                                  key={menu.id}
-                                                  value={menu.slug}
-                                              >
-                                                  {menu.name}
-                                              </option>
-                                          ))
-                                    : null}
-                                {menus &&
+                                Menu
+                            </Label>
+                            <div className="relative">
+                                <select
+                                    id="menu-select"
+                                    className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    value={currentMenu?.slug || ''}
+                                    onChange={(e) =>
+                                        handleMenuSelect(e.target.value)
+                                    }
+                                >
+                                    <option value="">Select a menu</option>
+                                    {menus &&
                                     Array.isArray(menus) &&
-                                    menus.length === 0 && (
-                                        <option value="" disabled>
-                                            No menus available
-                                        </option>
-                                    )}
-                            </select>
+                                    menus.length > 0
+                                        ? menus
+                                              .filter(
+                                                  (menu) =>
+                                                      menu &&
+                                                      typeof menu ===
+                                                          'object' &&
+                                                      menu.id &&
+                                                      menu.slug &&
+                                                      menu.name
+                                              )
+                                              .map((menu) => (
+                                                  <option
+                                                      key={menu.id}
+                                                      value={menu.slug}
+                                                  >
+                                                      {menu.name}
+                                                  </option>
+                                              ))
+                                        : null}
+                                    {menus &&
+                                        Array.isArray(menus) &&
+                                        menus.length === 0 && (
+                                            <option value="" disabled>
+                                                No menus available
+                                            </option>
+                                        )}
+                                </select>
+                            </div>
                         </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowCreateMenuModal(true)}
-                            className="flex items-center space-x-1 text-green-600 hover:text-green-700 hover:bg-green-50 bg-green-100 border border-green-300 cursor-pointer"
-                        >
-                            <Plus className="h-4 w-4" />
-                            <span>Add Menu</span>
-                        </Button>
-                        {currentMenu && (
+                        <div className="flex flex-wrap gap-2">
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={handleDeleteMenu}
-                                className="flex items-center space-x-1 text-red-600 hover:text-red-700 hover:bg-red-50 bg-red-100 border border-red-300 cursor-pointer"
+                                onClick={() => setShowCreateMenuModal(true)}
+                                className="flex items-center space-x-1 text-green-600 hover:text-green-700 hover:bg-green-50 bg-green-100 border border-green-300 cursor-pointer flex-1"
                             >
-                                <Trash2 className="h-4 w-4" />
-                                <span>Delete Menu</span>
+                                <Plus className="h-4 w-4" />
+                                <span>Add Menu</span>
                             </Button>
-                        )}
+                            {currentMenu && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleDeleteMenu}
+                                    className="flex items-center space-x-1 text-red-600 hover:text-red-700 hover:bg-red-50 bg-red-100 border border-red-300 cursor-pointer flex-1"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    <span>Delete Menu</span>
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 flex">
+                <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-0 min-h-0">
                     {/* Tree Panel */}
-                    <div className="w-1/2 bg-white border-r border-gray-200 p-6">
-                        <div className="flex items-center justify-between mb-4">
+                    <div className="bg-white border-r border-gray-200 p-4 lg:p-6 lg:order-1 overflow-auto">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-2 sm:space-y-0">
                             <h2 className="text-lg font-semibold">Menu Tree</h2>
-                            <div className="flex space-x-2">
+                            <div className="flex flex-wrap gap-2">
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={handleExpandAll}
-                                    className="flex items-center space-x-1"
+                                    className="flex items-center space-x-1 rounded-full cursor-pointer bg-black text-white hover:bg-slate-800 hover:text-white flex-1"
                                 >
                                     <Expand className="h-4 w-4" />
                                     <span>Expand All</span>
@@ -235,7 +285,7 @@ export default function MenusPage() {
                                     variant="outline"
                                     size="sm"
                                     onClick={handleCollapseAll}
-                                    className="flex items-center space-x-1"
+                                    className="flex items-center space-x-1 rounded-full cursor-pointer flex-1"
                                 >
                                     <ChevronUp className="h-4 w-4" />
                                     <span>Collapse All</span>
@@ -265,7 +315,7 @@ export default function MenusPage() {
                     </div>
 
                     {/* Details Panel */}
-                    <div className="w-1/2 bg-white">
+                    <div className="bg-white lg:order-2 overflow-auto">
                         <ItemDetailsForm
                             item={selectedItem}
                             menuSlug={currentMenu?.slug || ''}

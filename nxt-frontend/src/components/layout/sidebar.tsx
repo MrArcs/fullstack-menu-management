@@ -31,26 +31,9 @@ export function Sidebar({ className }: SidebarProps) {
             <div className="flex items-center justify-between p-4 border-b border-sidebar-foreground/20">
                 {!collapsed && (
                     <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 bg-white rounded flex items-center justify-center">
-                            <span className="text-sidebar font-bold text-sm">
-                                C
-                            </span>
-                        </div>
                         <span className="font-bold text-lg">CLOIT</span>
                     </div>
                 )}
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCollapsed(!collapsed)}
-                    className="text-sidebar-foreground hover:bg-sidebar-foreground/10"
-                >
-                    {collapsed ? (
-                        <Menu className="h-4 w-4" />
-                    ) : (
-                        <X className="h-4 w-4" />
-                    )}
-                </Button>
             </div>
 
             {/* Navigation */}

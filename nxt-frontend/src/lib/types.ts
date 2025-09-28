@@ -114,6 +114,7 @@ export interface MenuTreeProps {
     onItemSelect: (item: MenuItem) => void
     onAddChild: (parentId: string) => void
     selectedItemId?: string
+    menuSlug: string
 }
 
 export interface ItemDetailsFormProps {

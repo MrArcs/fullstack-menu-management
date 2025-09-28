@@ -22,7 +22,9 @@ export class MenusService {
             const menu = await tx.menu.create({
                 data: { name: dto.name, slug: dto.slug },
             })
-            const root = await tx.menuItem.create({
+
+            // Create a root item for the menu
+            const rootItem = await tx.menuItem.create({
                 data: {
                     menuId: menu.id,
                     parentId: null,
@@ -31,7 +33,8 @@ export class MenusService {
                     order: 1,
                 },
             })
-            return { menu, root }
+
+            return { menu, rootItem }
         })
     }
 
@@ -77,10 +80,32 @@ export class MenusService {
 
     async addItem(slug: string, dto: CreateItemDto) {
         const menu = await this.getMenuBySlug(slug)
+
+        // Handle root items (parentId is null)
+        if (!dto.parentId) {
+            const lastOrder = await this.prisma.menuItem.aggregate({
+                where: { menuId: menu.id, parentId: null },
+                _max: { order: true },
+            })
+            const nextOrder = (lastOrder._max.order ?? 0) + 1
+            return this.prisma.menuItem.create({
+                data: {
+                    menuId: menu.id,
+                    parentId: null,
+                    title: dto.title,
+                    url: dto.url,
+                    type: dto.type ?? 'LINK',
+                    order: nextOrder,
+                },
+            })
+        }
+
+        // Handle child items (parentId is provided)
         const parent = await this.prisma.menuItem.findFirst({
             where: { id: dto.parentId, menuId: menu.id },
         })
         if (!parent) throw new NotFoundException('Parent item not found')
+
         const lastOrder = await this.prisma.menuItem.aggregate({
             where: { menuId: menu.id, parentId: parent.id },
             _max: { order: true },
@@ -174,9 +199,6 @@ export class MenusService {
             where: { id: itemId, menuId: menu.id },
         })
         if (!item) throw new NotFoundException('Item not found')
-        // Deleting a root item is not allowed (delete menu instead)
-        if (item.parentId === null)
-            throw new BadRequestException('Cannot delete root item')
         return this.prisma.menuItem.delete({ where: { id: itemId } })
     }
 

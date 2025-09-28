@@ -45,14 +45,20 @@ const initialState: MenuState = {
 export const fetchMenus = createAsyncThunk(
     'menu/fetchMenus',
     async (params?: { status?: string; q?: string }) => {
-        return await apiClient.getMenus(params)
+        console.log('Fetching menus with params:', params)
+        const result = await apiClient.getMenus(params)
+        console.log('Menus fetched:', result)
+        return result
     }
 )
 
 export const fetchMenuTree = createAsyncThunk(
     'menu/fetchMenuTree',
     async (slug: string) => {
-        return await apiClient.getMenuTree(slug)
+        console.log('Fetching menu tree for slug:', slug)
+        const result = await apiClient.getMenuTree(slug)
+        console.log('Menu tree fetched:', result)
+        return result
     }
 )
 
@@ -92,7 +98,7 @@ export const addItem = createAsyncThunk(
     }: {
         slug: string
         data: {
-            parentId: string
+            parentId: string | null
             title: string
             url?: string
             type?: 'LINK' | 'GROUP' | 'SEPARATOR'
@@ -107,6 +113,14 @@ export const deleteItem = createAsyncThunk(
     async ({ slug, itemId }: { slug: string; itemId: string }) => {
         await apiClient.deleteItem(slug, itemId)
         return itemId
+    }
+)
+
+export const deleteMenu = createAsyncThunk(
+    'menu/deleteMenu',
+    async (slug: string) => {
+        await apiClient.deleteMenu(slug)
+        return slug
     }
 )
 
@@ -131,13 +145,43 @@ const menuSlice = createSlice({
                         item.id === action.payload
                             ? !item.expanded
                             : item.expanded,
-                    children: toggleExpanded(item.children),
+                    children: toggleExpanded(item.children || []),
                 }))
             }
             if (state.currentTree) {
                 state.currentTree = {
                     ...state.currentTree,
-                    children: toggleExpanded(state.currentTree.children),
+                    children: toggleExpanded(state.currentTree.children || []),
+                }
+            }
+        },
+        expandAllItems: (state) => {
+            const expandAll = (items: MenuItem[]): MenuItem[] => {
+                return items.map((item) => ({
+                    ...item,
+                    expanded: true,
+                    children: expandAll(item.children || []),
+                }))
+            }
+            if (state.currentTree) {
+                state.currentTree = {
+                    ...state.currentTree,
+                    children: expandAll(state.currentTree.children || []),
+                }
+            }
+        },
+        collapseAllItems: (state) => {
+            const collapseAll = (items: MenuItem[]): MenuItem[] => {
+                return items.map((item) => ({
+                    ...item,
+                    expanded: false,
+                    children: collapseAll(item.children || []),
+                }))
+            }
+            if (state.currentTree) {
+                state.currentTree = {
+                    ...state.currentTree,
+                    children: collapseAll(state.currentTree.children || []),
                 }
             }
         },
@@ -179,7 +223,16 @@ const menuSlice = createSlice({
             .addCase(createMenu.fulfilled, (state, action) => {
                 state.menus.push(action.payload.menu)
                 state.currentMenu = action.payload.menu
-                state.currentTree = action.payload.root
+                // Create a tree structure with the root item
+                state.currentTree = {
+                    id: 'virtual-root',
+                    parentId: null,
+                    title: 'Root',
+                    url: null,
+                    type: 'GROUP',
+                    order: 0,
+                    children: [action.payload.rootItem],
+                }
             })
             // Update item
             .addCase(updateItem.fulfilled, (state, action) => {
@@ -189,12 +242,12 @@ const menuSlice = createSlice({
                         if (item.id === action.payload.id) {
                             return {
                                 ...action.payload,
-                                children: item.children,
+                                children: item.children || [],
                             }
                         }
                         return {
                             ...item,
-                            children: updateItemInTree(item.children),
+                            children: updateItemInTree(item.children || []),
                         }
                     })
                 }
@@ -210,7 +263,21 @@ const menuSlice = createSlice({
             })
             // Add item
             .addCase(addItem.fulfilled, (state, action) => {
-                // Add the new item to the tree
+                // Handle root items (parentId is null)
+                if (!action.payload.parentId) {
+                    if (state.currentTree) {
+                        state.currentTree = {
+                            ...state.currentTree,
+                            children: [
+                                ...(state.currentTree.children || []),
+                                action.payload,
+                            ],
+                        }
+                    }
+                    return
+                }
+
+                // Handle child items (parentId is provided)
                 const addItemToTree = (
                     items: MenuItem[],
                     parentId: string
@@ -219,12 +286,18 @@ const menuSlice = createSlice({
                         if (item.id === parentId) {
                             return {
                                 ...item,
-                                children: [...item.children, action.payload],
+                                children: [
+                                    ...(item.children || []),
+                                    action.payload,
+                                ],
                             }
                         }
                         return {
                             ...item,
-                            children: addItemToTree(item.children, parentId),
+                            children: addItemToTree(
+                                item.children || [],
+                                parentId
+                            ),
                         }
                     })
                 }
@@ -233,7 +306,7 @@ const menuSlice = createSlice({
                         ...state.currentTree,
                         children: addItemToTree(
                             state.currentTree.children,
-                            action.payload.parentId || ''
+                            action.payload.parentId
                         ),
                     }
                 }
@@ -246,7 +319,7 @@ const menuSlice = createSlice({
                         .filter((item) => item.id !== action.payload)
                         .map((item) => ({
                             ...item,
-                            children: removeItemFromTree(item.children),
+                            children: removeItemFromTree(item.children || []),
                         }))
                 }
                 if (state.currentTree) {
@@ -261,6 +334,19 @@ const menuSlice = createSlice({
                     state.selectedItem = null
                 }
             })
+            // Delete menu
+            .addCase(deleteMenu.fulfilled, (state, action) => {
+                // Remove the menu from the list
+                state.menus = state.menus.filter(
+                    (menu) => menu.slug !== action.payload
+                )
+                // If the deleted menu was the current menu, clear it
+                if (state.currentMenu?.slug === action.payload) {
+                    state.currentMenu = null
+                    state.currentTree = null
+                    state.selectedItem = null
+                }
+            })
     },
 })
 
@@ -269,6 +355,8 @@ export const {
     setSelectedItem,
     toggleTreeExpanded,
     toggleItemExpanded,
+    expandAllItems,
+    collapseAllItems,
     clearError,
 } = menuSlice.actions
 

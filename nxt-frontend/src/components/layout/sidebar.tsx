@@ -64,7 +64,7 @@ export function Sidebar({ className }: SidebarProps) {
                             className={cn(
                                 'flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors',
                                 item.active
-                                    ? 'text-white'
+                                    ? 'text-green-800'
                                     : 'text-sidebar-foreground hover:bg-sidebar-foreground/10'
                             )}
                             style={

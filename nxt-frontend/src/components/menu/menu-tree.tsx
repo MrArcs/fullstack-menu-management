@@ -4,37 +4,116 @@ import {
     ChevronDown,
     ChevronRight,
     Plus,
-    Link,
     Folder,
-    Minus,
+    Trash2,
+    File,
 } from 'lucide-react'
 import { MenuItem, MenuTreeProps } from '@/lib/types'
 import { useAppDispatch } from '@/lib/hooks'
-import { toggleItemExpanded } from '@/store/slices/menuSlice'
+import { toggleItemExpanded, deleteItem } from '@/store/slices/menuSlice'
+import toast from 'react-hot-toast'
 
 export function MenuTree({
     items,
     onItemSelect,
     onAddChild,
     selectedItemId,
+    menuSlug,
 }: MenuTreeProps) {
     const dispatch = useAppDispatch()
+
+    const calculateItemDepth = (
+        itemId: string,
+        items: MenuItem[],
+        currentDepth: number = 0
+    ): number => {
+        for (const item of items) {
+            if (item.id === itemId) {
+                return currentDepth
+            }
+            if (item.children && item.children.length > 0) {
+                const foundDepth = calculateItemDepth(
+                    itemId,
+                    item.children,
+                    currentDepth + 1
+                )
+                if (foundDepth >= 0) {
+                    return foundDepth
+                }
+            }
+        }
+        return -1
+    }
+
+    const canAddChild = (item: MenuItem): boolean => {
+        const itemDepth = calculateItemDepth(item.id, items)
+        return itemDepth < 3 // Allow up to depth 3 (0, 1, 2, 3) = 4 levels total
+    }
+
+    const handleDeleteItem = async (itemId: string, itemTitle: string) => {
+        // Show confirmation toast
+        toast(
+            (t) => (
+                <div className="flex flex-col space-y-2">
+                    <div className="font-semibold">Confirm Delete</div>
+                    <div className="text-sm">
+                        Are you sure you want to delete &quot;{itemTitle}&quot;?
+                        This action cannot be undone.
+                    </div>
+                    <div className="flex space-x-2 mt-2">
+                        <button
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                            onClick={() => {
+                                toast.dismiss(t.id)
+                                executeDeleteItem(itemId)
+                            }}
+                        >
+                            Delete
+                        </button>
+                        <button
+                            className="px-3 py-1 bg-gray-300 text-gray-700 text-sm rounded hover:bg-gray-400"
+                            onClick={() => toast.dismiss(t.id)}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            ),
+            {
+                duration: Infinity,
+                id: 'delete-item-confirmation',
+                position: 'bottom-center',
+            }
+        )
+    }
+
+    const executeDeleteItem = async (itemId: string) => {
+        const deleteItemToast = toast.loading('Deleting item...')
+
+        try {
+            await dispatch(deleteItem({ slug: menuSlug, itemId })).unwrap()
+            toast.success('Item deleted successfully', { id: deleteItemToast })
+        } catch (error) {
+            console.error('Failed to delete item:', error)
+            toast.error('Failed to delete item. Please try again.', {
+                id: deleteItemToast,
+            })
+        }
+    }
 
     const renderItem = (item: MenuItem, level: number = 0) => {
         const hasChildren = item.children && item.children.length > 0
         const isExpanded = item.expanded !== false
         const isSelected = selectedItemId === item.id
 
-        const getItemIcon = (type: string) => {
-            switch (type) {
-                case 'LINK':
-                    return <Link className="h-3 w-3" />
-                case 'GROUP':
-                    return <Folder className="h-3 w-3" />
-                case 'SEPARATOR':
-                    return <Minus className="h-3 w-3" />
-                default:
-                    return <Link className="h-3 w-3" />
+        const getItemIcon = (item: MenuItem) => {
+            // Check if item has children
+            const hasChildren = item.children && item.children.length > 0
+
+            if (hasChildren) {
+                return <Folder className="h-3 w-3" />
+            } else {
+                return <File className="h-3 w-3" />
             }
         }
 
@@ -66,23 +145,37 @@ export function MenuTree({
                         <div className="w-4" />
                     )}
 
-                    {getItemIcon(item.type)}
+                    {getItemIcon(item)}
                     <span className="text-sm flex-1">{item.title}</span>
 
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            onAddChild(item.id)
-                        }}
-                        className="p-1 hover:bg-blue-50 rounded"
-                        style={{
-                            backgroundColor: '#253BFF',
-                            color: 'white',
-                        }}
-                        title="Add child to lower layer (last position)"
-                    >
-                        <Plus className="h-3 w-3" />
-                    </button>
+                    <div className="flex space-x-1">
+                        {canAddChild(item) && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    onAddChild(item.id)
+                                }}
+                                className="p-1 rounded hover:bg-blue-50"
+                                style={{
+                                    backgroundColor: '#253BFF',
+                                    color: 'white',
+                                }}
+                                title="Add child to lower layer (last position)"
+                            >
+                                <Plus className="h-3 w-3" />
+                            </button>
+                        )}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteItem(item.id, item.title)
+                            }}
+                            className="p-1 hover:bg-red-50 rounded text-red-600 hover:text-red-700"
+                            title="Delete item"
+                        >
+                            <Trash2 className="h-3 w-3" />
+                        </button>
+                    </div>
                 </div>
 
                 {hasChildren && isExpanded && (
@@ -92,6 +185,15 @@ export function MenuTree({
                         )}
                     </div>
                 )}
+            </div>
+        )
+    }
+
+    // Add safety check for items
+    if (!items || !Array.isArray(items)) {
+        return (
+            <div className="text-center py-8 text-gray-500">
+                No items available
             </div>
         )
     }

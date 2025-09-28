@@ -26,7 +26,7 @@ export interface CreateMenuRequest {
 }
 
 export interface CreateItemRequest {
-    parentId: string
+    parentId: string | null
     title: string
     url?: string
     type?: 'LINK' | 'GROUP' | 'SEPARATOR'
@@ -54,6 +54,7 @@ class ApiClient {
 
     constructor(baseUrl: string) {
         this.baseUrl = baseUrl
+        console.log('API Client initialized with base URL:', baseUrl)
     }
 
     private async request<T>(
@@ -61,6 +62,8 @@ class ApiClient {
         options: RequestInit = {}
     ): Promise<T> {
         const url = `${this.baseUrl}${endpoint}`
+        console.log('API Request:', { url, options })
+
         const response = await fetch(url, {
             headers: {
                 'Content-Type': 'application/json',
@@ -69,16 +72,25 @@ class ApiClient {
             ...options,
         })
 
+        console.log('API Response:', {
+            status: response.status,
+            ok: response.ok,
+        })
+
         if (!response.ok) {
+            const errorText = await response.text()
+            console.error('API Error:', errorText)
             throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        return response.json()
+        const result = await response.json()
+        console.log('API Result:', result)
+        return result
     }
 
     // Menu endpoints
     async createMenu(data: CreateMenuRequest) {
-        return this.request<{ menu: Menu; root: MenuItem }>('/menus', {
+        return this.request<{ menu: Menu; rootItem: MenuItem }>('/menus', {
             method: 'POST',
             body: JSON.stringify(data),
         })

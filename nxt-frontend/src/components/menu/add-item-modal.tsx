@@ -7,20 +7,14 @@ import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
 import { AddItemModalProps } from '@/lib/types'
 import { useAppDispatch } from '@/lib/hooks'
 import { addItem } from '@/store/slices/menuSlice'
+import toast from 'react-hot-toast'
 
 const addItemSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     url: z.string().optional(),
-    type: z.enum(['LINK', 'GROUP', 'SEPARATOR']),
 })
 
 type AddItemFormData = z.infer<typeof addItemSchema>
@@ -33,33 +27,38 @@ export function AddItemModal({
 }: AddItemModalProps) {
     const dispatch = useAppDispatch()
     const [loading, setLoading] = useState(false)
-    const [showTypeSelect, setShowTypeSelect] = useState(false)
 
     const form = useForm<AddItemFormData>({
         resolver: zodResolver(addItemSchema),
         defaultValues: {
             title: '',
             url: '',
-            type: 'LINK',
         },
     })
 
     const onSubmit = async (data: AddItemFormData) => {
         setLoading(true)
+        const addItemToast = toast.loading('Adding item...')
+
         try {
             await dispatch(
                 addItem({
                     slug: menuSlug,
                     data: {
-                        parentId,
+                        parentId: parentId === 'root' ? null : parentId,
                         ...data,
+                        type: 'LINK', // Default to LINK type
                     },
                 })
             ).unwrap()
+            toast.success('Item added successfully', { id: addItemToast })
             form.reset()
             onClose()
         } catch (error) {
             console.error('Failed to add item:', error)
+            toast.error('Failed to add item. Please try again.', {
+                id: addItemToast,
+            })
         } finally {
             setLoading(false)
         }
@@ -70,10 +69,15 @@ export function AddItemModal({
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-96 max-w-md">
-                <h2 className="text-lg font-semibold mb-4">Add New Item</h2>
+                <h2 className="text-lg font-semibold mb-4">
+                    {parentId === 'root'
+                        ? 'Create Root Menu Item'
+                        : 'Add New Item'}
+                </h2>
                 <p className="text-sm text-gray-600 mb-4">
-                    This item will be added as the last child in the lower
-                    layer.
+                    {parentId === 'root'
+                        ? 'This item will be added as a root-level menu item.'
+                        : 'This item will be added as the last child in the lower layer.'}
                 </p>
 
                 <form
@@ -101,68 +105,6 @@ export function AddItemModal({
                             {...form.register('url')}
                             placeholder="Enter URL"
                         />
-                    </div>
-
-                    <div>
-                        <Label htmlFor="type">Type</Label>
-                        <div className="relative">
-                            <SelectTrigger
-                                onClick={() =>
-                                    setShowTypeSelect(!showTypeSelect)
-                                }
-                            >
-                                <SelectValue>{form.watch('type')}</SelectValue>
-                            </SelectTrigger>
-                            {showTypeSelect && (
-                                <SelectContent>
-                                    <SelectItem
-                                        value="LINK"
-                                        onSelect={(value) => {
-                                            form.setValue(
-                                                'type',
-                                                value as
-                                                    | 'LINK'
-                                                    | 'GROUP'
-                                                    | 'SEPARATOR'
-                                            )
-                                            setShowTypeSelect(false)
-                                        }}
-                                    >
-                                        Link
-                                    </SelectItem>
-                                    <SelectItem
-                                        value="GROUP"
-                                        onSelect={(value) => {
-                                            form.setValue(
-                                                'type',
-                                                value as
-                                                    | 'LINK'
-                                                    | 'GROUP'
-                                                    | 'SEPARATOR'
-                                            )
-                                            setShowTypeSelect(false)
-                                        }}
-                                    >
-                                        Group
-                                    </SelectItem>
-                                    <SelectItem
-                                        value="SEPARATOR"
-                                        onSelect={(value) => {
-                                            form.setValue(
-                                                'type',
-                                                value as
-                                                    | 'LINK'
-                                                    | 'GROUP'
-                                                    | 'SEPARATOR'
-                                            )
-                                            setShowTypeSelect(false)
-                                        }}
-                                    >
-                                        Separator
-                                    </SelectItem>
-                                </SelectContent>
-                            )}
-                        </div>
                     </div>
 
                     <div className="flex space-x-2">

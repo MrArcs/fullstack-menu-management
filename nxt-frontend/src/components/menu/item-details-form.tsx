@@ -1,57 +1,112 @@
 'use client'
 
-import { useState } from 'react'
+import React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
 import { ItemDetailsFormProps } from '@/lib/types'
 import { useAppDispatch, useAppSelector } from '@/lib/hooks'
-import { updateItem } from '@/store/slices/menuSlice'
+import { updateItem, MenuItem } from '@/store/slices/menuSlice'
+import toast from 'react-hot-toast'
 
 const itemSchema = z.object({
     title: z.string().min(1, 'Title is required'),
-    url: z.string().optional(),
-    type: z.enum(['LINK', 'GROUP', 'SEPARATOR']),
 })
 
 type ItemFormData = z.infer<typeof itemSchema>
 
 export function ItemDetailsForm({ item, menuSlug }: ItemDetailsFormProps) {
     const dispatch = useAppDispatch()
-    const { loading } = useAppSelector((state) => state.menu)
-    const [showTypeSelect, setShowTypeSelect] = useState(false)
+    const { loading, currentTree } = useAppSelector((state) => state.menu)
 
     const form = useForm<ItemFormData>({
         resolver: zodResolver(itemSchema),
         defaultValues: {
             title: item?.title || '',
-            url: item?.url || '',
-            type: item?.type || 'LINK',
         },
     })
 
+    // Update form when item changes
+    React.useEffect(() => {
+        if (item) {
+            form.reset({
+                title: item.title,
+            })
+        }
+    }, [item, form])
+
+    // Calculate the actual depth of the item
+    const calculateItemDepth = (
+        itemId: string,
+        tree: MenuItem | null,
+        depth = 0
+    ): number => {
+        if (!tree || !tree.children) return -1
+
+        for (const child of tree.children) {
+            if (child.id === itemId) {
+                return depth
+            }
+            if (child.children && child.children.length > 0) {
+                const foundDepth = calculateItemDepth(itemId, child, depth + 1)
+                if (foundDepth >= 0) {
+                    return foundDepth
+                }
+            }
+        }
+        return -1
+    }
+
+    // Get parent name
+    const getParentName = (
+        parentId: string | null,
+        tree: MenuItem | null
+    ): string => {
+        if (!parentId || !tree) return 'Root'
+
+        const findParent = (
+            items: MenuItem[],
+            targetId: string
+        ): MenuItem | null => {
+            for (const item of items) {
+                if (item.id === targetId) return item
+                if (item.children) {
+                    const found = findParent(item.children, targetId)
+                    if (found) return found
+                }
+            }
+            return null
+        }
+
+        const parent = findParent(tree.children || [], parentId)
+        return parent ? parent.title : 'Root'
+    }
+
     const onSubmit = async (data: ItemFormData) => {
         if (!item) return
+
+        const updateToast = toast.loading('Updating item...')
 
         try {
             await dispatch(
                 updateItem({
                     slug: menuSlug,
                     itemId: item.id,
-                    data,
+                    data: {
+                        ...data,
+                        type: 'LINK', // Keep existing type
+                    },
                 })
             ).unwrap()
+            toast.success('Item updated successfully', { id: updateToast })
         } catch (error) {
             console.error('Failed to update item:', error)
+            toast.error('Failed to update item. Please try again.', {
+                id: updateToast,
+            })
         }
     }
 
@@ -62,6 +117,9 @@ export function ItemDetailsForm({ item, menuSlug }: ItemDetailsFormProps) {
             </div>
         )
     }
+
+    const itemDepth = calculateItemDepth(item.id, currentTree)
+    const parentName = getParentName(item.parentId, currentTree)
 
     return (
         <div className="p-6">
@@ -84,7 +142,7 @@ export function ItemDetailsForm({ item, menuSlug }: ItemDetailsFormProps) {
                     <Label htmlFor="depth">Depth</Label>
                     <Input
                         id="depth"
-                        value={item.parentId ? '3' : '1'} // Simplified depth calculation
+                        value={itemDepth.toString()}
                         disabled
                         className="bg-gray-50"
                     />
@@ -95,7 +153,7 @@ export function ItemDetailsForm({ item, menuSlug }: ItemDetailsFormProps) {
                     <Label htmlFor="parent">Parent Data</Label>
                     <Input
                         id="parent"
-                        value={item.parentId || 'Root'}
+                        value={parentName}
                         disabled
                         className="bg-gray-50"
                     />
@@ -114,77 +172,6 @@ export function ItemDetailsForm({ item, menuSlug }: ItemDetailsFormProps) {
                             {form.formState.errors.title.message}
                         </p>
                     )}
-                </div>
-
-                {/* URL (editable) */}
-                <div>
-                    <Label htmlFor="url">URL</Label>
-                    <Input
-                        id="url"
-                        {...form.register('url')}
-                        placeholder="Enter URL (optional)"
-                    />
-                </div>
-
-                {/* Type (editable) */}
-                <div>
-                    <Label htmlFor="type">Type</Label>
-                    <div className="relative">
-                        <SelectTrigger
-                            onClick={() => setShowTypeSelect(!showTypeSelect)}
-                        >
-                            <SelectValue>{form.watch('type')}</SelectValue>
-                        </SelectTrigger>
-                        {showTypeSelect && (
-                            <SelectContent>
-                                <SelectItem
-                                    value="LINK"
-                                    onSelect={(value) => {
-                                        form.setValue(
-                                            'type',
-                                            value as
-                                                | 'LINK'
-                                                | 'GROUP'
-                                                | 'SEPARATOR'
-                                        )
-                                        setShowTypeSelect(false)
-                                    }}
-                                >
-                                    Link
-                                </SelectItem>
-                                <SelectItem
-                                    value="GROUP"
-                                    onSelect={(value) => {
-                                        form.setValue(
-                                            'type',
-                                            value as
-                                                | 'LINK'
-                                                | 'GROUP'
-                                                | 'SEPARATOR'
-                                        )
-                                        setShowTypeSelect(false)
-                                    }}
-                                >
-                                    Group
-                                </SelectItem>
-                                <SelectItem
-                                    value="SEPARATOR"
-                                    onSelect={(value) => {
-                                        form.setValue(
-                                            'type',
-                                            value as
-                                                | 'LINK'
-                                                | 'GROUP'
-                                                | 'SEPARATOR'
-                                        )
-                                        setShowTypeSelect(false)
-                                    }}
-                                >
-                                    Separator
-                                </SelectItem>
-                            </SelectContent>
-                        )}
-                    </div>
                 </div>
 
                 <Button

@@ -1,8 +1,8 @@
 # Development stage
 FROM node:24-alpine as development
 
-# Install PostgreSQL client tools
-RUN apk add --no-cache postgresql-client
+# Install PostgreSQL client tools and wget for health checks
+RUN apk add --no-cache postgresql-client wget
 
 WORKDIR /app
 
@@ -27,14 +27,14 @@ CMD ["sh", "-c", "echo 'Waiting for PostgreSQL to be ready...' && until pg_isrea
 # Production stage
 FROM node:24-alpine as production
 
-# Install PostgreSQL client tools
-RUN apk add --no-cache postgresql-client
+# Install PostgreSQL client tools and wget for health checks
+RUN apk add --no-cache postgresql-client wget
 
 WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm install --only=production
+RUN npm ci --only=production && npm cache clean --force
 
 # Copy built application
 COPY --from=development /app/dist ./dist
@@ -47,6 +47,11 @@ RUN npx prisma generate
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nestjs -u 1001
+
+# Change ownership of the app directory
+RUN chown -R nestjs:nodejs /app
+
+# Switch to non-root user
 USER nestjs
 
 # Expose port

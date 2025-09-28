@@ -1,6 +1,41 @@
 {$DOMAIN_NAME:invalid} {
     encode gzip
-    reverse_proxy frontend:80
+    
+    # Security headers
+    header {
+        -X-Powered-By
+        -Server
+        
+        # enable HSTS
+        Strict-Transport-Security max-age=31536000;
+        
+        # disable clients from sniffing the media type
+        X-Content-Type-Options nosniff
+        
+        # clickjacking protection
+        X-Frame-Options DENY
+        
+        # XSS Protection
+        X-XSS-Protection "1; mode=block"
+        
+        # Content Security Policy
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' api.{$DOMAIN_NAME:invalid};"
+    }
+    
+    # Logging
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size 100mb
+            roll_keep 5
+        }
+        format json
+    }
+    
+    reverse_proxy frontend:3000 {
+        health_uri /
+        health_interval 30s
+        health_timeout 5s
+    }
 }
 
 www.{$DOMAIN_NAME:invalid} {
@@ -8,9 +43,8 @@ www.{$DOMAIN_NAME:invalid} {
 }
 
 api.{$DOMAIN_NAME:invalid} {
-    reverse_proxy api:4004
-
-	 header {
+    # Security headers
+    header {
         -X-Powered-By
         -Server
 
@@ -25,9 +59,24 @@ api.{$DOMAIN_NAME:invalid} {
 
         # XSS Protection
         X-XSS-Protection "1; mode=block"
+        
+        # CORS headers
+        Access-Control-Allow-Origin "https://{$DOMAIN_NAME}"
+        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+        Access-Control-Allow-Headers "Content-Type, Authorization, Accept"
+        Access-Control-Allow-Credentials "true"
+    }
+    
+    # Logging
+    log {
+        output file /var/log/caddy/api-access.log {
+            roll_size 100mb
+            roll_keep 5
+        }
+        format json
     }
 
-	rate_limit {
+    rate_limit {
         # limit requests based on IP address
         zone api_limit {
             key {remote_host}
@@ -44,5 +93,11 @@ api.{$DOMAIN_NAME:invalid} {
             events 20
             window 1s
         }
+    }
+    
+    reverse_proxy api:3001 {
+        health_uri /health
+        health_interval 30s
+        health_timeout 5s
     }
 }

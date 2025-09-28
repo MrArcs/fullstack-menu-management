@@ -19,7 +19,7 @@
         X-XSS-Protection "1; mode=block"
         
         # Content Security Policy
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.{$DOMAIN_NAME:invalid};"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://menuapi.designervenkat.online;"
     }
     
     # Logging
@@ -39,7 +39,7 @@ www.{$DOMAIN_NAME:invalid} {
 	redir https://{$DOMAIN_NAME:invalid}{uri} permanent
 }
 
-api.{$DOMAIN_NAME:invalid} {
+menuapi.designervenkat.online {
     # Security headers
     header {
         -X-Powered-By

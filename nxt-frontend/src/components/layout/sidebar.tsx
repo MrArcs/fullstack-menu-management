@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Menu, X, Grid, Folder } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { SidebarProps } from '@/lib/types'
 
@@ -30,8 +30,13 @@ export function Sidebar({ className }: SidebarProps) {
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-sidebar-foreground/20">
                 {!collapsed && (
-                    <div className="flex items-center space-x-2">
-                        <span className="font-bold text-lg">CLOIT</span>
+                    <div className="flex items-center space-x-2 mt-2">
+                        <Image
+                            src="/logo.png"
+                            alt="logo"
+                            width={48}
+                            height={48}
+                        />
                     </div>
                 )}
             </div>

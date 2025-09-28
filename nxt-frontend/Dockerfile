@@ -24,6 +24,10 @@ RUN apk add --no-cache wget
 
 WORKDIR /app
 
+# Inject build-time public API URL
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 # Install all dependencies (including dev dependencies for build)
 COPY package*.json ./
 RUN npm ci && npm cache clean --force
@@ -53,5 +57,7 @@ EXPOSE 3000
 # Set NODE_ENV to production
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
 
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "start", "--", "-H", "0.0.0.0", "-p", "3000"]

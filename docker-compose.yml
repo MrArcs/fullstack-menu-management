@@ -28,6 +28,9 @@ services:
       target: production
     restart: unless-stopped
     env_file: ./nst-backend/.env
+    environment:
+      DOMAIN_NAME: ${DOMAIN_NAME}
+      NODE_ENV: production
     networks:
       - menu-app
     depends_on:
@@ -48,7 +51,11 @@ services:
     build:
       context: ./nxt-frontend
       target: production
+      args:
+        NEXT_PUBLIC_API_URL: https://api.${DOMAIN_NAME}/api/v1
     restart: unless-stopped
+    environment:
+      NODE_ENV: production
     networks:
       - menu-app
     depends_on:

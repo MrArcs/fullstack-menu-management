@@ -24,15 +24,18 @@ RUN apk add --no-cache wget
 
 WORKDIR /app
 
-# Install dependencies for building
+# Install all dependencies (including dev dependencies for build)
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci && npm cache clean --force
 
 # Copy source code
 COPY . .
 
 # Build the application
 RUN npm run build
+
+# Remove dev dependencies after build
+RUN npm prune --production
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs

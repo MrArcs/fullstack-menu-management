@@ -30,7 +30,7 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 # Install all dependencies (including dev dependencies for build)
 COPY package*.json ./
-RUN npm ci && npm cache clean --force
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm cache clean --force
 
 # Copy source code
 COPY . .

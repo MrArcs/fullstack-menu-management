@@ -77,7 +77,6 @@ services:
     volumes:
       - caddy_data:/data
       - caddy_config:/config
-      - caddy_logs:/var/log/caddy
     networks:
       - menu-app
     depends_on:
@@ -101,7 +100,6 @@ volumes:
   postgres_data:
   caddy_data:
   caddy_config:
-  caddy_logs:
 networks:
   menu-app:
     driver: bridge

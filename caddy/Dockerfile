@@ -9,8 +9,8 @@ FROM caddy:2-alpine
 # Install wget for health checks
 RUN apk add --no-cache wget
 
-# Create log directory
-RUN mkdir -p /var/log/caddy && chown -R caddy:caddy /var/log/caddy
+# Create log directory with proper permissions
+RUN mkdir -p /var/log/caddy
 
 COPY Caddyfile /etc/caddy/Caddyfile
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy

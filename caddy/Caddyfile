@@ -24,10 +24,7 @@
     
     # Logging
     log {
-        output file /var/log/caddy/access.log {
-            roll_size 100mb
-            roll_keep 5
-        }
+        output stdout
         format json
     }
     
@@ -69,10 +66,7 @@ api.{$DOMAIN_NAME:invalid} {
     
     # Logging
     log {
-        output file /var/log/caddy/api-access.log {
-            roll_size 100mb
-            roll_keep 5
-        }
+        output stdout
         format json
     }
 

@@ -125,47 +125,51 @@ export function ItemDetailsForm({ item, menuSlug }: ItemDetailsFormProps) {
         <div className="p-6">
             <h3 className="text-lg font-semibold mb-4">Item Details</h3>
 
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="flex flex-col gap-y-2 mx-auto w-full space-y-4"
+            >
                 {/* Menu ID (readonly) */}
-                <div>
+                <div className="flex flex-col gap-y-2">
                     <Label htmlFor="menuId">Menu ID</Label>
                     <Input
                         id="menuId"
                         value={item.id}
                         disabled
-                        className="bg-gray-50"
+                        className="bg-gray-50 h-12"
                     />
                 </div>
 
                 {/* Depth (readonly) */}
-                <div>
+                <div className="flex flex-col gap-y-2">
                     <Label htmlFor="depth">Depth</Label>
                     <Input
                         id="depth"
                         value={itemDepth.toString()}
                         disabled
-                        className="bg-gray-50"
+                        className="bg-gray-50 h-12"
                     />
                 </div>
 
                 {/* Parent Data (readonly) */}
-                <div>
+                <div className="flex flex-col gap-y-2">
                     <Label htmlFor="parent">Parent Data</Label>
                     <Input
                         id="parent"
                         value={parentName}
                         disabled
-                        className="bg-gray-50"
+                        className="bg-gray-50 h-12"
                     />
                 </div>
 
                 {/* Name (editable) */}
-                <div>
+                <div className="flex flex-col gap-y-2">
                     <Label htmlFor="title">Name</Label>
                     <Input
                         id="title"
                         {...form.register('title')}
                         placeholder="Enter item name"
+                        className="bg-gray-50 h-12"
                     />
                     {form.formState.errors.title && (
                         <p className="text-sm text-red-500 mt-1">
@@ -176,11 +180,7 @@ export function ItemDetailsForm({ item, menuSlug }: ItemDetailsFormProps) {
 
                 <Button
                     type="submit"
-                    className="w-full"
-                    style={{
-                        backgroundColor: '#253BFF',
-                        color: 'white',
-                    }}
+                    className="w-full bg-[#253BFF] text-white rounded-full max-w-xs h-12"
                     disabled={loading}
                 >
                     {loading ? 'Saving...' : 'Save'}

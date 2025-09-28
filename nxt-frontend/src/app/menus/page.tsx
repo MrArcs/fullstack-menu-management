@@ -27,23 +27,6 @@ export default function MenusPage() {
     const { menus, currentMenu, currentTree, selectedItem, loading, error } =
         useAppSelector((state) => state.menu)
 
-    console.log('MenusPage: Current state:', {
-        menus,
-        currentMenu,
-        currentTree,
-        selectedItem,
-        loading,
-        error,
-    })
-
-    // Debug menus array
-    console.log('MenusPage: Menus array details:', {
-        isArray: Array.isArray(menus),
-        length: menus?.length,
-        firstMenu: menus?.[0],
-        allMenus: menus,
-    })
-
     // Auto-select first menu if available and no current menu
     useEffect(() => {
         if (menus.length > 0 && !currentMenu && !loading) {
@@ -51,7 +34,6 @@ export default function MenusPage() {
                 (menu) => menu && typeof menu === 'object' && menu.slug
             ) // Find first menu with valid slug
             if (firstMenu && firstMenu.slug) {
-                console.log('MenusPage: Auto-selecting first menu:', firstMenu)
                 dispatch(setCurrentMenu(firstMenu))
                 dispatch(fetchMenuTree(firstMenu.slug))
             }
@@ -63,19 +45,15 @@ export default function MenusPage() {
     const [showCreateMenuModal, setShowCreateMenuModal] = useState(false)
 
     useEffect(() => {
-        console.log('MenusPage: useEffect triggered, dispatching fetchMenus')
         dispatch(fetchMenus()).catch((error) => {
             console.error('Failed to fetch menus:', error)
         })
     }, [dispatch])
 
     const handleMenuSelect = (menuSlug: string) => {
-        console.log('MenusPage: handleMenuSelect called with slug:', menuSlug)
         if (!menuSlug) return // Don't process empty slug
         const menu = menus.find((m) => m.slug === menuSlug)
-        console.log('MenusPage: Found menu:', menu)
         if (menu && menu.slug) {
-            console.log('MenusPage: Setting current menu and fetching tree')
             dispatch(setCurrentMenu(menu))
             dispatch(fetchMenuTree(menuSlug))
         }

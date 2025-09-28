@@ -45,9 +45,7 @@ const initialState: MenuState = {
 export const fetchMenus = createAsyncThunk(
     'menu/fetchMenus',
     async (params?: { status?: string; q?: string }) => {
-        console.log('Fetching menus with params:', params)
         const result = await apiClient.getMenus(params)
-        console.log('Menus fetched:', result)
         return result
     }
 )
@@ -55,9 +53,7 @@ export const fetchMenus = createAsyncThunk(
 export const fetchMenuTree = createAsyncThunk(
     'menu/fetchMenuTree',
     async (slug: string) => {
-        console.log('Fetching menu tree for slug:', slug)
         const result = await apiClient.getMenuTree(slug)
-        console.log('Menu tree fetched:', result)
         return result
     }
 )

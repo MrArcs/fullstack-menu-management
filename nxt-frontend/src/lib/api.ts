@@ -54,7 +54,6 @@ class ApiClient {
 
     constructor(baseUrl: string) {
         this.baseUrl = baseUrl
-        console.log('API Client initialized with base URL:', baseUrl)
     }
 
     private async request<T>(
@@ -62,19 +61,12 @@ class ApiClient {
         options: RequestInit = {}
     ): Promise<T> {
         const url = `${this.baseUrl}${endpoint}`
-        console.log('API Request:', { url, options })
-
         const response = await fetch(url, {
             headers: {
                 'Content-Type': 'application/json',
                 ...options.headers,
             },
             ...options,
-        })
-
-        console.log('API Response:', {
-            status: response.status,
-            ok: response.ok,
         })
 
         if (!response.ok) {
@@ -84,7 +76,6 @@ class ApiClient {
         }
 
         const result = await response.json()
-        console.log('API Result:', result)
         return result
     }
 

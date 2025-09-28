@@ -155,7 +155,7 @@ export function MenuTree({
                                     e.stopPropagation()
                                     onAddChild(item.id)
                                 }}
-                                className="p-1 rounded hover:bg-blue-50"
+                                className="p-1 rounded-full hover:bg-blue-50"
                                 style={{
                                     backgroundColor: '#253BFF',
                                     color: 'white',
